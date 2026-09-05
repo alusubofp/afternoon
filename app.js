@@ -22,6 +22,32 @@ const riskScore = document.querySelector("#risk-score");
 const riskDot = document.querySelector("#risk-dot");
 const sliders = [...document.querySelectorAll(".behavior-slider")];
 const weights = { renewable: 0.15, transit: 0.09, forest: 0.12, recycle: 0.06, efficiency: 0.1, car: 0.12, flight: 0.1, industry: 0.16, meat: 0.05, fossil: 0.15 };
+const actionNames = { renewable: "재생에너지", transit: "대중교통", forest: "산림 복원", recycle: "재활용", efficiency: "에너지 절약", car: "자동차 사용", flight: "비행기 이용", industry: "산업 배출", meat: "육류 소비", fossil: "화석연료 발전" };
+
+function updateCoach(values, emissions, temperature, seaLevel, co2) {
+  const pressureKeys = ["car", "flight", "industry", "meat", "fossil"];
+  const reductionKeys = ["renewable", "transit", "forest", "recycle", "efficiency"];
+  const pressureConcerns = pressureKeys.map((key) => ({ key, score: values[key] * weights[key] })).sort((a, b) => b.score - a.score);
+  const reductionOpportunities = reductionKeys.map((key) => ({ key, score: (100 - values[key]) * weights[key] })).sort((a, b) => b.score - a.score);
+  const recommendations = [...pressureConcerns.slice(0, 2).map(({ key }) => ({ key, type: "reduce", amount: 20 })), ...reductionOpportunities.slice(0, 2).map(({ key }) => ({ key, type: "increase", amount: 20 }))].sort((a, b) => weights[b.key] - weights[a.key]).slice(0, 3);
+  const topConcerns = pressureConcerns.slice(0, 3).filter(({ score }) => score > 2).map(({ key }) => actionNames[key]);
+  const factors = document.querySelector("#coach-factors");
+  factors.innerHTML = topConcerns.map((name) => `<span>${name}</span>`).join("");
+  if (!topConcerns.length) factors.innerHTML = "<span>배출 압력이 낮은 상태</span>";
+
+  document.querySelector("#coach-recommendation-list").innerHTML = recommendations.map(({ key, type, amount }, index) => {
+    const effect = weights[key] * amount * (type === "reduce" ? 1 : 0.82);
+    const temperatureEffect = effect * 0.052;
+    const seaEffect = effect * 1.12;
+    return `<div class="recommendation-item"><span class="recommendation-rank">0${index + 1}</span><div><strong>${type === "reduce" ? `${actionNames[key]} 줄이기` : `${actionNames[key]} 늘리기`}</strong><small>${type === "reduce" ? "배출 압력 완화" : "감축 효과 확대"} · ${amount}%p 제안</small><em>CO₂ −${effect.toFixed(1)}Gt · 온도 −${temperatureEffect.toFixed(1)}°C · 해수면 −${Math.round(seaEffect)}cm</em></div></div>`;
+  }).join("");
+
+  const totalEffect = recommendations.reduce((total, { key, type, amount }) => total + weights[key] * amount * (type === "reduce" ? 1 : 0.82), 0);
+  const forecastEmissions = Math.max(4, emissions - totalEffect);
+  document.querySelector("#forecast-temperature").textContent = `−${(temperature - (0.55 + forecastEmissions * 0.052)).toFixed(1)}°C`;
+  document.querySelector("#forecast-co2").textContent = `−${(co2 - (360 + forecastEmissions * 2.25)).toFixed(1)}Gt`;
+  document.querySelector("#forecast-sea").textContent = `−${Math.round(seaLevel - (6 + forecastEmissions * 1.12))}cm`;
+}
 
 function updateSimulation() {
   const values = Object.fromEntries(sliders.map((input) => [input.dataset.key, Number(input.value)]));
@@ -61,26 +87,69 @@ function updateSimulation() {
   document.querySelector("#ice-value").firstChild.textContent = Math.round(iceLoss);
   riskLabel.textContent = risk;
   riskScore.textContent = `${score}%`;
-  coachMessage.textContent = message;
+  coachMessage.textContent = `${risk}입니다. 현재 연간 배출량은 ${emissions.toFixed(1)}GtCO₂, 평균기온 상승 전망은 +${temperature.toFixed(1)}°C입니다. ${message}`;
   riskDot.className = `risk-dot ${isDanger ? "is-danger" : isWarning ? "is-warning" : "is-safe"}`;
   document.querySelector("#planet-status").textContent = isDanger ? "HIGH PRESSURE" : isWarning ? "IN TRANSITION" : "BALANCED";
+  updateCoach(values, emissions, temperature, seaLevel, co2);
 
   if (window.earthMaterial) {
     const climateColor = new THREE.Color(0x2aa876).lerp(new THREE.Color(0xef5b4f), Math.min(emissions / 48, 1));
-    window.earthMaterial.color.copy(climateColor);
+      window.earthMaterial.uniforms.climateTint.value.copy(climateColor);
+      window.earthMaterial.userData.targetIceCoverage = Math.max(0.38, 1 - iceLoss / 115);
+    const emissionLevel = Math.min(1, Math.max(0, (emissions - 4) / 44));
+    window.earthMaterial.userData.targetSeaLevel = 0.74 - emissionLevel * 0.34;
+    window.earthMaterial.userData.targetSeaIntensity = emissionLevel;
     window.earthAtmosphere.material.color.copy(climateColor);
     window.earthAtmosphere.material.opacity = 0.12 + Math.min(emissions / 160, 0.26);
     window.earthClouds.material.opacity = 0.48 + Math.min(emissions / 180, 0.28);
-    if (window.earthGlaciers) {
-      const glacierScale = Math.max(0.42, 1 - iceLoss / 115);
-      window.earthGlaciers.forEach((glacier) => glacier.scale.set(glacierScale, glacierScale, glacierScale));
-      window.earthSea.material.opacity = 0.08 + Math.min(iceLoss / 260, 0.12);
-      const seaScale = 1 + Math.min(iceLoss / 380, 0.08);
-      window.earthSea.scale.setScalar(seaScale);
-      const landScale = 1 - Math.min(iceLoss / 520, 0.06);
-      window.earthGlobe.scale.setScalar(landScale);
-    }
+      window.earthGlobe.scale.setScalar(1);
   }
+}
+
+function createIceTexture(THREE) {
+  const canvas = document.createElement("canvas");
+  canvas.width = 1024;
+  canvas.height = 512;
+  const context = canvas.getContext("2d");
+  const gradient = context.createLinearGradient(0, 0, 0, canvas.height);
+  gradient.addColorStop(0, "#f9fdff");
+  gradient.addColorStop(0.45, "#dcecf2");
+  gradient.addColorStop(1, "#7eabbc");
+  context.fillStyle = gradient;
+  context.fillRect(0, 0, canvas.width, canvas.height);
+
+  for (let index = 0; index < 620; index += 1) {
+    const x = Math.random() * canvas.width;
+    const y = Math.random() * canvas.height;
+    const radius = 4 + Math.random() * 34;
+    const color = Math.random() > 0.52 ? "rgba(255,255,255,.18)" : "rgba(63,129,153,.12)";
+    context.fillStyle = color;
+    context.beginPath();
+    context.ellipse(x, y, radius * 1.8, radius, Math.random() * Math.PI, 0, Math.PI * 2);
+    context.fill();
+  }
+
+  context.lineCap = "round";
+  for (let index = 0; index < 38; index += 1) {
+    let x = Math.random() * canvas.width;
+    let y = 90 + Math.random() * 340;
+    context.beginPath();
+    context.moveTo(x, y);
+    context.strokeStyle = Math.random() > 0.35 ? "rgba(58,112,135,.48)" : "rgba(255,255,255,.58)";
+    context.lineWidth = 1 + Math.random() * 2.5;
+    for (let segment = 0; segment < 5; segment += 1) {
+      x += 18 + Math.random() * 60;
+      y += (Math.random() - 0.5) * 44;
+      context.lineTo(x, y);
+    }
+    context.stroke();
+  }
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.wrapT = THREE.ClampToEdgeWrapping;
+  return texture;
 }
 
 function createEarth() {
@@ -91,6 +160,8 @@ function createEarth() {
   }
 
   const scene = new THREE.Scene();
+  const planet = new THREE.Group();
+  scene.add(planet);
   const skyboxLoader = new THREE.CubeTextureLoader();
   skyboxLoader.setPath("https://threejs.org/examples/textures/cube/MilkyWay/");
   scene.background = skyboxLoader.load([
@@ -118,56 +189,40 @@ function createEarth() {
     texture.colorSpace = THREE.SRGBColorSpace;
   });
 
-  const earthMaterial = new THREE.MeshPhongMaterial({
-    color: 0x2563eb,
-    map: earthTexture,
-    normalMap: earthNormal,
-    normalScale: new THREE.Vector2(0.55, 0.55),
-    specularMap: earthSpecular,
-    specular: new THREE.Color(0x789cc4),
-    shininess: 24,
+  const iceTexture = createIceTexture(THREE);
+  const earthMaterial = new THREE.ShaderMaterial({
+    uniforms: {
+      earthMap: { value: earthTexture },
+      iceMap: { value: iceTexture },
+      iceCoverage: { value: 1 },
+      seaLevel: { value: 0.74 },
+      seaIntensity: { value: 0 },
+      climateTint: { value: new THREE.Color(0x2aa876) },
+      lightDirection: { value: new THREE.Vector3(-0.45, 0.82, 0.9).normalize() },
+    },
+    vertexShader: `varying vec2 vUv; varying vec3 vNormal; void main() { vUv = uv; vNormal = normalize(normal); gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
+    fragmentShader: `varying vec2 vUv; varying vec3 vNormal; uniform sampler2D earthMap; uniform sampler2D iceMap; uniform float iceCoverage; uniform float seaLevel; uniform float seaIntensity; uniform vec3 climateTint; uniform vec3 lightDirection; void main() { vec3 normal = normalize(vNormal); vec3 earthColor = texture2D(earthMap, vUv).rgb; vec3 iceTextureColor = texture2D(iceMap, vUv).rgb; float noise = texture2D(iceMap, vec2(vUv.x * 1.7, vUv.y * 1.25)).b; float northPolar = smoothstep(0.68, 0.94, vUv.y); float southPolar = smoothstep(0.68, 0.94, 1.0 - vUv.y); float northIrregular = smoothstep(0.28, 0.72, noise + (1.0 - vUv.y) * 0.22); float southIrregular = smoothstep(0.24, 0.62, noise * 0.8 + (1.0 - vUv.y) * 0.2); float northIce = northPolar * northIrregular * smoothstep(0.48, 0.94, iceCoverage); float southIce = southPolar * southIrregular * smoothstep(0.34, 0.9, iceCoverage); float iceMask = clamp(northIce + southIce, 0.0, 1.0); float landness = smoothstep(0.025, 0.16, earthColor.r - earthColor.b); float southernLatitude = 1.0 - vUv.y; float floodBoundary = smoothstep(seaLevel - 0.035, seaLevel + 0.035, southernLatitude); float floodMask = landness * floodBoundary; float shoreline = landness * (1.0 - smoothstep(0.0, 0.055, abs(southernLatitude - seaLevel))); vec3 shallowOcean = vec3(0.22, 0.8, 0.92); vec3 deepOcean = vec3(0.07, 0.46, 0.74); vec3 oceanColor = mix(shallowOcean, deepOcean, seaIntensity * 0.58); vec3 floodedLandColor = vec3(0.4, 0.521569, 0.607843); vec3 surfaceColor = mix(earthColor, floodedLandColor, floodMask * 0.96); vec3 shorelineColor = mix(floodedLandColor, oceanColor, 0.35); surfaceColor = mix(surfaceColor, shorelineColor, shoreline * 0.28); vec3 coldIce = mix(vec3(0.48, 0.7, 0.78), iceTextureColor, 0.74); surfaceColor = mix(surfaceColor, coldIce, iceMask); float light = 0.62 + 0.38 * max(dot(normal, normalize(lightDirection)), 0.0); float sparkle = pow(max(dot(reflect(-normalize(lightDirection), normal), vec3(0.0, 0.0, 1.0)), 0.0), 30.0) * iceMask; surfaceColor *= light; surfaceColor += vec3(0.24, 0.36, 0.42) * sparkle; surfaceColor = mix(surfaceColor, surfaceColor * climateTint, 0.08); gl_FragColor = vec4(surfaceColor, 1.0); }`,
   });
+  earthMaterial.userData.targetIceCoverage = 1;
+  earthMaterial.userData.targetSeaLevel = 0.74;
+  earthMaterial.userData.targetSeaIntensity = 0;
   window.earthMaterial = earthMaterial;
   const globe = new THREE.Mesh(new THREE.SphereGeometry(1, 96, 96), earthMaterial);
-  scene.add(globe);
+  planet.add(globe);
   window.earthGlobe = globe;
-
-  const glacierMaterial = new THREE.MeshPhongMaterial({
-    color: 0xe9f8ff,
-    transparent: true,
-    opacity: 0.92,
-    shininess: 80,
-  });
-  const northGlacier = new THREE.Mesh(
-    new THREE.SphereGeometry(1.009, 64, 32, 0, Math.PI * 2, 0, 0.34),
-    glacierMaterial
-  );
-  const southGlacier = new THREE.Mesh(
-    new THREE.SphereGeometry(1.009, 64, 32, 0, Math.PI * 2, Math.PI - 0.34, 0.34),
-    glacierMaterial.clone()
-  );
-  scene.add(northGlacier, southGlacier);
-  window.earthGlaciers = [northGlacier, southGlacier];
-
-  const sea = new THREE.Mesh(
-    new THREE.SphereGeometry(1.016, 64, 64),
-    new THREE.MeshPhongMaterial({ color: 0x45b9d8, transparent: true, opacity: 0.1, side: THREE.FrontSide, depthWrite: false })
-  );
-  scene.add(sea);
-  window.earthSea = sea;
-
   const clouds = new THREE.Mesh(
     new THREE.SphereGeometry(1.012, 64, 64),
     new THREE.MeshPhongMaterial({ map: cloudTexture, transparent: true, opacity: 0.58, depthWrite: false })
   );
-  scene.add(clouds);
+  clouds.renderOrder = 2;
+  planet.add(clouds);
   window.earthClouds = clouds;
 
   const atmosphere = new THREE.Mesh(
     new THREE.SphereGeometry(1.075, 64, 64),
     new THREE.MeshPhongMaterial({ color: 0x49bff5, transparent: true, opacity: 0.18, side: THREE.BackSide, blending: THREE.AdditiveBlending, depthWrite: false })
   );
-  scene.add(atmosphere);
+  planet.add(atmosphere);
   window.earthAtmosphere = atmosphere;
 
   const starsGeometry = new THREE.BufferGeometry();
@@ -186,15 +241,30 @@ function createEarth() {
   keyLight.position.set(-3, 2, 4);
   scene.add(keyLight);
 
-  const controls = window.THREE.OrbitControls ? new THREE.OrbitControls(camera, renderer.domElement) : null;
-  if (controls) {
-    controls.enableZoom = true;
-    controls.enablePan = false;
-    controls.minDistance = 2.2;
-    controls.maxDistance = 5;
-    controls.autoRotate = true;
-    controls.autoRotateSpeed = 0.55;
-  }
+  let isDragging = false;
+  let previousPointer = { x: 0, y: 0 };
+  renderer.domElement.style.cursor = "grab";
+  renderer.domElement.addEventListener("pointerdown", (event) => {
+    isDragging = true;
+    previousPointer = { x: event.clientX, y: event.clientY };
+    renderer.domElement.setPointerCapture(event.pointerId);
+    renderer.domElement.style.cursor = "grabbing";
+  });
+  renderer.domElement.addEventListener("pointermove", (event) => {
+    if (!isDragging) return;
+    const deltaX = event.clientX - previousPointer.x;
+    const deltaY = event.clientY - previousPointer.y;
+    planet.rotation.y += deltaX * 0.008;
+    planet.rotation.x = Math.max(-0.55, Math.min(0.55, planet.rotation.x + deltaY * 0.004));
+    previousPointer = { x: event.clientX, y: event.clientY };
+  });
+  const stopDragging = (event) => {
+    isDragging = false;
+    if (event.pointerId !== undefined && renderer.domElement.hasPointerCapture(event.pointerId)) renderer.domElement.releasePointerCapture(event.pointerId);
+    renderer.domElement.style.cursor = "grab";
+  };
+  renderer.domElement.addEventListener("pointerup", stopDragging);
+  renderer.domElement.addEventListener("pointercancel", stopDragging);
 
   function resize() {
     const size = Math.min(sceneTarget.clientWidth, 500);
@@ -204,9 +274,14 @@ function createEarth() {
 
   function animate() {
     requestAnimationFrame(animate);
-    if (controls) controls.update();
-    else globe.rotation.y += 0.0025;
-    clouds.rotation.y = globe.rotation.y * 1.08;
+    if (!isDragging) planet.rotation.y += 0.0025;
+    clouds.rotation.y += 0.0008;
+    if (window.earthMaterial) {
+      const { uniforms, userData } = window.earthMaterial;
+      uniforms.iceCoverage.value += (userData.targetIceCoverage - uniforms.iceCoverage.value) * 0.045;
+      uniforms.seaLevel.value += (userData.targetSeaLevel - uniforms.seaLevel.value) * 0.045;
+      uniforms.seaIntensity.value += (userData.targetSeaIntensity - uniforms.seaIntensity.value) * 0.045;
+    }
     renderer.render(scene, camera);
   }
 

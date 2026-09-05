@@ -47,7 +47,7 @@
             <span class="coordinate-label" id="planet-status">BALANCED</span>
           </div>
           <div id="earth-scene" class="earth-scene" aria-label="회전하는 3D 지구"></div>
-          <p class="drag-hint"><span class="mouse-icon">↔</span> 드래그하여 지구를 회전하세요</p>
+          <p class="drag-hint"><span class="mouse-icon">↔</span> 드래그하여 지구를 회전하세요 · 빙하 감소와 해수면 상승을 확인하세요</p>
         </div>
 
         <aside class="action-panel increase-panel glass-panel" aria-labelledby="increase-title">
@@ -75,9 +75,31 @@
       </section>
 
       <section class="coach-card glass-panel" aria-labelledby="coach-title">
-        <div class="coach-icon" aria-hidden="true">✦</div>
-        <div><p class="eyebrow">AI ENVIRONMENT COACH</p><h2 id="coach-title">오늘의 환경 코치</h2><p id="coach-message">현재 행동 조합을 분석하고 있습니다.</p></div>
-        <span class="coach-status">ANALYSIS READY</span>
+        <div class="coach-head">
+          <div class="coach-icon" aria-hidden="true">✦</div>
+          <div><p class="eyebrow">AI ENVIRONMENT COACH / LIVE ADVICE</p><h2 id="coach-title">오늘의 환경 코치</h2></div>
+          <span class="coach-status">ANALYSIS READY</span>
+        </div>
+        <div class="coach-grid">
+          <article class="coach-analysis coach-bubble">
+            <p class="coach-label">현재 상태 분석</p>
+            <p id="coach-message">현재 행동 조합을 분석하고 있습니다.</p>
+            <div class="coach-factors" id="coach-factors"><span>데이터를 읽는 중</span></div>
+          </article>
+          <article class="coach-recommendations">
+            <p class="coach-label">AI 추천 행동 <span>우선순위 1–3</span></p>
+            <div id="coach-recommendation-list" class="recommendation-list"></div>
+          </article>
+          <article class="coach-forecast">
+            <p class="coach-label">추천 적용 후 예상 변화</p>
+            <div class="forecast-values">
+              <div><strong id="forecast-temperature">−0.0°C</strong><span>평균기온</span></div>
+              <div><strong id="forecast-co2">−0.0Gt</strong><span>CO₂</span></div>
+              <div><strong id="forecast-sea">−0cm</strong><span>해수면 상승</span></div>
+            </div>
+            <p class="forecast-note">현재 설정에서 가장 영향력 있는 3가지 개선을 적용한 시뮬레이션입니다.</p>
+          </article>
+        </div>
       </section>
 
       <footer class="footer-note"><span>MODEL v1.0</span><span>데이터는 시뮬레이션을 위한 예측값입니다.</span><span>© 2026 CLIMATE LAB</span></footer>

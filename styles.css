@@ -60,10 +60,33 @@ h1 { margin-top: 4px; font-size: clamp(1.4rem, 3vw, 2rem); font-weight: 700; let
 .result-card strong { display: block; margin-top: 12px; color: #f3faff; font-size: clamp(1.8rem, 4vw, 2.6rem); font-weight: 500; letter-spacing: -0.06em; }
 .result-card strong span { margin-left: 4px; color: #8ca9bf; font-family: "DM Mono", monospace; font-size: 0.86rem; letter-spacing: 0; }
 .result-card small { display: block; margin-top: 10px; color: #62819a; font-family: "DM Mono", monospace; font-size: 0.58rem; }
-.coach-card { display: flex; align-items: center; gap: 18px; margin-top: 22px; padding: 22px 26px; border-radius: 18px; }
+.coach-card { display: block; margin-top: 22px; padding: 24px 26px 26px; border-color: rgba(105, 169, 214, .24); background: linear-gradient(145deg, rgba(23, 56, 86, .82), rgba(10, 29, 49, .78)); border-radius: 18px; }
+.coach-head { display: flex; align-items: center; gap: 12px; }
 .coach-icon { display: grid; width: 38px; height: 38px; flex: 0 0 auto; place-items: center; border: 1px solid rgba(34, 197, 94, 0.42); border-radius: 11px; color: #5ae58a; background: rgba(34, 197, 94, 0.12); font-size: 1.3rem; }
 .coach-card h2 { margin-top: 4px; font-size: 0.98rem; }
-.coach-card p:last-child { max-width: 700px; margin-top: 7px; color: #a9bece; font-size: 0.78rem; }
+.coach-status { margin-left: auto; color: #61cb86; font-family: "DM Mono", monospace; font-size: 0.6rem; letter-spacing: 0.1em; white-space: nowrap; }
+.coach-grid { display: grid; grid-template-columns: 1.08fr 1.2fr .82fr; gap: 14px; margin-top: 22px; }
+.coach-analysis, .coach-recommendations, .coach-forecast { min-height: 155px; padding: 18px; border: 1px solid rgba(148, 190, 224, .13); border-radius: 13px; background: rgba(6, 23, 41, .42); }
+.coach-bubble { position: relative; border-color: rgba(109, 216, 151, .23); background: rgba(25, 77, 67, .28); }
+.coach-bubble::before { position: absolute; top: 18px; left: -7px; width: 12px; height: 12px; border-bottom: 1px solid rgba(109, 216, 151, .23); border-left: 1px solid rgba(109, 216, 151, .23); background: #173f3e; content: ""; transform: rotate(45deg); }
+.coach-label { color: #9fc0d5; font-family: "DM Mono", monospace; font-size: .62rem; letter-spacing: .06em; }
+.coach-label span { float: right; color: #668aa3; font-size: .55rem; }
+.coach-analysis > p:nth-child(2) { margin-top: 13px; color: #e4f3f6; font-size: .78rem; line-height: 1.65; }
+.coach-factors { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 15px; }
+.coach-factors span { padding: 4px 7px; border: 1px solid rgba(239, 91, 79, .23); border-radius: 5px; color: #ffb4aa; background: rgba(239, 91, 79, .1); font-size: .59rem; }
+.recommendation-list { display: grid; gap: 9px; margin-top: 12px; }
+.recommendation-item { display: flex; align-items: center; gap: 9px; }
+.recommendation-rank { color: #6fd491; font-family: "DM Mono", monospace; font-size: .65rem; }
+.recommendation-item div { min-width: 0; flex: 1; }
+.recommendation-item strong, .recommendation-item small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.recommendation-item strong { color: #e3f1f5; font-size: .7rem; font-weight: 600; }
+.recommendation-item small { margin-top: 2px; color: #7494aa; font-size: .57rem; }
+.recommendation-item > b { color: #7ce2a0; font-family: "DM Mono", monospace; font-size: .62rem; font-weight: 500; }
+.forecast-values { display: grid; gap: 11px; margin-top: 15px; }
+.forecast-values div { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.forecast-values strong { color: #7ce2a0; font-family: "DM Mono", monospace; font-size: 1rem; font-weight: 500; }
+.forecast-values span { color: #7897aa; font-size: .58rem; }
+.forecast-note { margin-top: 13px; color: #66859b; font-size: .58rem; line-height: 1.5; }
 .coach-status { margin-left: auto; color: #61cb86; font-family: "DM Mono", monospace; font-size: 0.6rem; letter-spacing: 0.1em; white-space: nowrap; }
 .footer-note { display: flex; justify-content: space-between; gap: 16px; margin-top: 28px; color: #4e6d86; font-family: "DM Mono", monospace; font-size: 0.57rem; letter-spacing: 0.06em; }
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
@@ -114,3 +137,4 @@ h1 { margin-top: 4px; font-size: clamp(1.4rem, 3vw, 2rem); font-weight: 700; let
 .output-card { border-color: rgba(249, 115, 22, .28); }
 @media (max-width: 1100px) { .simulation-grid { grid-template-columns: 1fr 1fr; } .earth-panel { grid-column: 1 / -1; grid-row: 1; min-height: 500px; } .action-panel { min-height: auto; } .earth-scene { height: 420px; } .results-grid { grid-template-columns: repeat(3, 1fr); } }
 @media (max-width: 650px) { .simulation-grid { grid-template-columns: 1fr; } .earth-panel { grid-column: auto; grid-row: auto; min-height: auto; } .earth-scene { height: 78vw; max-height: 360px; } .results-section { padding: 18px 14px; } .results-header { align-items: flex-start; flex-direction: column; } .results-header .risk-row { width: 100%; } .results-grid { grid-template-columns: repeat(2, 1fr); } .output-card { grid-column: 1 / -1; } }
+@media (max-width: 650px) { .coach-card { padding: 20px 16px; } .coach-grid { grid-template-columns: 1fr; } .coach-bubble::before { top: -7px; left: 22px; border-top: 1px solid rgba(109, 216, 151, .23); border-right: 1px solid rgba(109, 216, 151, .23); border-bottom: 0; border-left: 0; } .coach-status { display: none; } }
