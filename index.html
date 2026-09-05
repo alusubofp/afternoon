@@ -6,10 +6,7 @@
       name="viewport"
       content="width=device-width, initial-scale=1.0"
     />
-    <meta
-      name="description"
-      content="탄소 배출량에 따른 지구 변화 시뮬레이션"
-    />
+    <meta name="description" content="행동과 정책에 따른 탄소 배출 시뮬레이션" />
 
     <title>탄소 배출 시뮬레이션</title>
 
@@ -24,46 +21,62 @@
       <header class="topbar">
         <div class="brand-mark" aria-hidden="true"><span></span></div>
         <div>
-          <p class="eyebrow">CLIMATE INTELLIGENCE / 2026</p>
-          <h1>탄소 배출 시뮬레이션</h1>
-          <p class="subtitle">탄소 배출량에 따라 지구의 변화를 실시간으로 확인하세요.</p>
+          <p class="eyebrow">CLIMATE INTELLIGENCE / POLICY LAB</p>
+          <h1>탄소의 내일을 조율하세요</h1>
+          <p class="subtitle">행동과 정책을 움직여 지구의 변화를 실시간으로 확인하세요.</p>
         </div>
-        <div class="live-indicator"><span></span> LIVE MODEL</div>
+        <div class="live-indicator"><span></span> LIVE SIMULATION</div>
       </header>
 
       <section class="simulation-grid" aria-label="탄소 배출 시뮬레이션">
+        <aside class="action-panel reduce-panel glass-panel" aria-labelledby="reduce-title">
+          <div class="action-heading"><div class="action-symbol">−</div><div><p class="eyebrow green-eyebrow">CARBON REDUCTION</p><h2 id="reduce-title">줄이는 행동</h2></div><span class="action-total" id="reduce-total">0%</span></div>
+          <p class="action-intro">깨끗한 선택이 대기의 부담을 덜어줍니다.</p>
+          <div class="action-list">
+            <label class="action-item"><span class="action-label"><span>🌞</span>재생에너지 사용 확대<b data-value-for="renewable">0%</b></span><input class="behavior-slider reduce-slider" data-key="renewable" type="range" min="0" max="100" value="58" /></label>
+            <label class="action-item"><span class="action-label"><span>🚆</span>대중교통 이용 증가<b data-value-for="transit">0%</b></span><input class="behavior-slider reduce-slider" data-key="transit" type="range" min="0" max="100" value="44" /></label>
+            <label class="action-item"><span class="action-label"><span>🌳</span>나무 심기 / 산림 복원<b data-value-for="forest">0%</b></span><input class="behavior-slider reduce-slider" data-key="forest" type="range" min="0" max="100" value="52" /></label>
+            <label class="action-item"><span class="action-label"><span>♻️</span>재활용 및 음식물 쓰레기 줄이기<b data-value-for="recycle">0%</b></span><input class="behavior-slider reduce-slider" data-key="recycle" type="range" min="0" max="100" value="35" /></label>
+            <label class="action-item"><span class="action-label"><span>💡</span>에너지 절약 정책<b data-value-for="efficiency">0%</b></span><input class="behavior-slider reduce-slider" data-key="efficiency" type="range" min="0" max="100" value="41" /></label>
+          </div>
+        </aside>
+
         <div class="earth-panel glass-panel">
           <div class="panel-heading">
-            <div><p class="eyebrow">PLANETARY VIEW</p><h2>지구 상태</h2></div>
-            <span class="coordinate-label">EARTH / 01</span>
+            <div><p class="eyebrow">PLANETARY VIEW / REAL TIME</p><h2>지구 상태</h2></div>
+            <span class="coordinate-label" id="planet-status">BALANCED</span>
           </div>
           <div id="earth-scene" class="earth-scene" aria-label="회전하는 3D 지구"></div>
           <p class="drag-hint"><span class="mouse-icon">↔</span> 드래그하여 지구를 회전하세요</p>
         </div>
 
-        <aside class="control-column">
-          <section class="emission-panel glass-panel">
-            <div class="panel-heading compact">
-              <div><p class="eyebrow">INPUT VARIABLE</p><h2>연간 탄소 배출량</h2></div>
-              <span class="unit">GtCO₂/년</span>
-            </div>
-            <div class="value-display"><strong id="emission-value">32.0</strong><span>GtCO₂</span></div>
-            <label class="sr-only" for="emission-slider">연간 탄소 배출량</label>
-            <input id="emission-slider" class="emission-slider" type="range" min="0" max="50" step="0.1" value="32" />
-            <div class="slider-scale"><span>0</span><span>25</span><span>50 GtCO₂</span></div>
-            <div class="risk-row"><span id="risk-dot" class="risk-dot"></span><span id="risk-label">주의 단계</span><span class="risk-line"></span><span id="risk-score">64%</span></div>
-          </section>
-
-          <section class="results-grid" aria-label="예상 결과">
-            <article class="result-card glass-panel"><div class="result-icon temperature-icon" aria-hidden="true">°</div><p>평균기온 상승</p><strong id="temperature-value">+2.2<span>°C</span></strong><small>산업화 이전 대비</small></article>
-            <article class="result-card glass-panel"><div class="result-icon sea-icon" aria-hidden="true">⌁</div><p>해수면 상승</p><strong id="sea-level-value">+42<span>cm</span></strong><small>2100년 예상치</small></article>
-          </section>
+        <aside class="action-panel increase-panel glass-panel" aria-labelledby="increase-title">
+          <div class="action-heading"><div class="action-symbol">+</div><div><p class="eyebrow red-eyebrow">CARBON PRESSURE</p><h2 id="increase-title">늘리는 행동</h2></div><span class="action-total" id="increase-total">0%</span></div>
+          <p class="action-intro">편리함을 위한 선택이 배출 압력을 키웁니다.</p>
+          <div class="action-list">
+            <label class="action-item"><span class="action-label"><span>🚗</span>자동차 사용 증가<b data-value-for="car">0%</b></span><input class="behavior-slider increase-slider" data-key="car" type="range" min="0" max="100" value="52" /></label>
+            <label class="action-item"><span class="action-label"><span>✈️</span>비행기 이용 증가<b data-value-for="flight">0%</b></span><input class="behavior-slider increase-slider" data-key="flight" type="range" min="0" max="100" value="38" /></label>
+            <label class="action-item"><span class="action-label"><span>🏭</span>공장 및 산업 배출 증가<b data-value-for="industry">0%</b></span><input class="behavior-slider increase-slider" data-key="industry" type="range" min="0" max="100" value="46" /></label>
+            <label class="action-item"><span class="action-label"><span>🥩</span>육류 소비 증가<b data-value-for="meat">0%</b></span><input class="behavior-slider increase-slider" data-key="meat" type="range" min="0" max="100" value="34" /></label>
+            <label class="action-item"><span class="action-label"><span>⚡</span>화석연료 발전 사용 증가<b data-value-for="fossil">0%</b></span><input class="behavior-slider increase-slider" data-key="fossil" type="range" min="0" max="100" value="49" /></label>
+          </div>
         </aside>
+      </section>
+
+      <section class="results-section" aria-label="실시간 결과">
+        <div class="results-header"><div><p class="eyebrow">REAL-TIME OUTLOOK</p><h2>실시간 결과</h2></div><div class="risk-row"><span id="risk-dot" class="risk-dot"></span><span id="risk-label">주의 단계</span><span class="risk-line"></span><span id="risk-score">64%</span></div></div>
+        <div class="results-grid">
+          <article class="result-card"><div class="result-icon temperature-icon" aria-hidden="true">°</div><p>평균기온 상승</p><strong id="temperature-value">+2.2<span>°C</span></strong><small>산업화 이전 대비</small></article>
+          <article class="result-card"><div class="result-icon sea-icon" aria-hidden="true">⌁</div><p>해수면 상승</p><strong id="sea-level-value">+42<span>cm</span></strong><small>2100년 예상치</small></article>
+          <article class="result-card"><div class="result-icon cloud-icon" aria-hidden="true">◌</div><p>대기 CO₂ 농도</p><strong id="co2-value">421<span>ppm</span></strong><small>현재 기준 농도 421 ppm</small></article>
+          <article class="result-card"><div class="result-icon ice-icon" aria-hidden="true">❄</div><p>빙하 감소율</p><strong id="ice-value">18<span>%</span></strong><small>2100년 누적 예상</small></article>
+          <article class="result-card output-card"><div class="result-icon output-icon" aria-hidden="true">↗</div><p>연간 탄소 배출량</p><strong id="emission-value">32.0<span>GtCO₂</span></strong><small>행동 조합 기준</small></article>
+        </div>
       </section>
 
       <section class="coach-card glass-panel" aria-labelledby="coach-title">
         <div class="coach-icon" aria-hidden="true">✦</div>
-        <div><p class="eyebrow">AI ENVIRONMENT COACH</p><h2 id="coach-title">오늘의 환경 코치</h2><p id="coach-message">현재 배출량은 위험 수준입니다. 재생에너지 사용을 늘리면 예상 온도 상승을 줄일 수 있습니다.</p></div>
+        <div><p class="eyebrow">AI ENVIRONMENT COACH</p><h2 id="coach-title">오늘의 환경 코치</h2><p id="coach-message">현재 행동 조합을 분석하고 있습니다.</p></div>
         <span class="coach-status">ANALYSIS READY</span>
       </section>
 

@@ -13,7 +13,6 @@
  * 4. 개인정보나 API 키를 코드에 입력하지 않습니다.
  */
 
-const slider = document.querySelector("#emission-slider");
 const emissionValue = document.querySelector("#emission-value");
 const temperatureValue = document.querySelector("#temperature-value");
 const seaLevelValue = document.querySelector("#sea-level-value");
@@ -21,34 +20,57 @@ const coachMessage = document.querySelector("#coach-message");
 const riskLabel = document.querySelector("#risk-label");
 const riskScore = document.querySelector("#risk-score");
 const riskDot = document.querySelector("#risk-dot");
+const sliders = [...document.querySelectorAll(".behavior-slider")];
+const weights = { renewable: 0.15, transit: 0.09, forest: 0.12, recycle: 0.06, efficiency: 0.1, car: 0.12, flight: 0.1, industry: 0.16, meat: 0.05, fossil: 0.15 };
 
 function updateSimulation() {
-  const emissions = Number(slider.value);
-  const temperature = 0.8 + emissions * 0.044;
-  const seaLevel = 10 + emissions;
-  const score = Math.round(emissions * 2);
-  let risk = "안정 단계";
-  let message = "현재 배출량은 안정적인 수준입니다. 지속 가능한 생활 방식을 유지해 보세요.";
+  const values = Object.fromEntries(sliders.map((input) => [input.dataset.key, Number(input.value)]));
+  const reductionKeys = ["renewable", "transit", "forest", "recycle", "efficiency"];
+  const pressureKeys = ["car", "flight", "industry", "meat", "fossil"];
+  const reduction = reductionKeys.reduce((total, key) => total + values[key] * weights[key], 0);
+  const pressure = pressureKeys.reduce((total, key) => total + values[key] * weights[key], 0);
+  const reductionAverage = Math.round(reductionKeys.reduce((total, key) => total + values[key], 0) / 5);
+  const pressureAverage = Math.round(pressureKeys.reduce((total, key) => total + values[key], 0) / 5);
+  const emissions = Math.max(4, 18 + pressure - reduction * 0.82);
+  const temperature = 0.55 + emissions * 0.052;
+  const seaLevel = 6 + emissions * 1.12;
+  const co2 = 360 + emissions * 2.25;
+  const iceLoss = Math.max(3, emissions * 0.82 - reduction * 0.12);
+  const score = Math.min(100, Math.round(emissions * 2.1));
+  const isDanger = emissions >= 34;
+  const isWarning = emissions >= 24;
+  const risk = isDanger ? "위험 수준" : isWarning ? "주의 단계" : "안정 단계";
+  const message = isDanger
+    ? "자동차와 화석연료 사용이 높아 목표 온도를 초과합니다. 재생에너지와 대중교통을 함께 늘려보세요."
+    : reductionAverage > pressureAverage
+      ? "재생에너지와 산림 복원을 늘리면 1.5°C 목표에 가까워집니다."
+      : "자동차와 산업 배출을 조금 낮추면 1.5°C 목표에 가까워질 수 있습니다.";
 
-  if (emissions >= 35) {
-    risk = "위험 수준";
-    message = "현재 배출량은 위험 수준입니다. 재생에너지 사용을 늘리면 예상 온도 상승을 줄일 수 있습니다.";
-  } else if (emissions >= 20) {
-    risk = "주의 단계";
-    message = "배출량을 조금만 낮춰도 미래의 온도 상승과 해수면 변화를 의미 있게 줄일 수 있습니다.";
-  }
-
-  emissionValue.textContent = emissions.toFixed(1);
+  document.querySelector("#reduce-total").textContent = `${reductionAverage}%`;
+  document.querySelector("#increase-total").textContent = `${pressureAverage}%`;
+  sliders.forEach((input) => {
+    document.querySelector(`[data-value-for="${input.dataset.key}"]`).textContent = `${input.value}%`;
+    const fillColor = input.classList.contains("reduce-slider") ? "#39bf75" : "#e65d58";
+    const trackColor = input.classList.contains("reduce-slider") ? "rgba(116, 210, 158, .18)" : "rgba(239, 124, 115, .18)";
+    input.style.background = `linear-gradient(90deg, ${fillColor} ${input.value}%, ${trackColor} ${input.value}%)`;
+  });
+  emissionValue.firstChild.textContent = emissions.toFixed(1);
   temperatureValue.firstChild.textContent = `+${temperature.toFixed(1)}`;
   seaLevelValue.firstChild.textContent = `+${Math.round(seaLevel)}`;
+  document.querySelector("#co2-value").firstChild.textContent = Math.round(co2);
+  document.querySelector("#ice-value").firstChild.textContent = Math.round(iceLoss);
   riskLabel.textContent = risk;
   riskScore.textContent = `${score}%`;
   coachMessage.textContent = message;
-  riskDot.className = `risk-dot ${emissions >= 35 ? "is-danger" : emissions >= 20 ? "is-warning" : "is-safe"}`;
+  riskDot.className = `risk-dot ${isDanger ? "is-danger" : isWarning ? "is-warning" : "is-safe"}`;
+  document.querySelector("#planet-status").textContent = isDanger ? "HIGH PRESSURE" : isWarning ? "IN TRANSITION" : "BALANCED";
 
   if (window.earthMaterial) {
-    const climateColor = new THREE.Color(0x2563eb).lerp(new THREE.Color(0xef4444), emissions / 50);
+    const climateColor = new THREE.Color(0x2aa876).lerp(new THREE.Color(0xef5b4f), Math.min(emissions / 48, 1));
     window.earthMaterial.color.copy(climateColor);
+    window.earthAtmosphere.material.color.copy(climateColor);
+    window.earthAtmosphere.material.opacity = 0.12 + Math.min(emissions / 160, 0.26);
+    window.earthClouds.material.opacity = 0.48 + Math.min(emissions / 180, 0.28);
   }
 }
 
@@ -105,12 +127,14 @@ function createEarth() {
     new THREE.MeshPhongMaterial({ map: cloudTexture, transparent: true, opacity: 0.58, depthWrite: false })
   );
   scene.add(clouds);
+  window.earthClouds = clouds;
 
   const atmosphere = new THREE.Mesh(
     new THREE.SphereGeometry(1.075, 64, 64),
     new THREE.MeshPhongMaterial({ color: 0x49bff5, transparent: true, opacity: 0.18, side: THREE.BackSide, blending: THREE.AdditiveBlending, depthWrite: false })
   );
   scene.add(atmosphere);
+  window.earthAtmosphere = atmosphere;
 
   const starsGeometry = new THREE.BufferGeometry();
   const starPositions = [];
@@ -157,7 +181,7 @@ function createEarth() {
   animate();
 }
 
-slider.addEventListener("input", updateSimulation);
+sliders.forEach((input) => input.addEventListener("input", updateSimulation));
 updateSimulation();
 createEarth();
 
