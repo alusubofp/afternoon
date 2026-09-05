@@ -71,6 +71,15 @@ function updateSimulation() {
     window.earthAtmosphere.material.color.copy(climateColor);
     window.earthAtmosphere.material.opacity = 0.12 + Math.min(emissions / 160, 0.26);
     window.earthClouds.material.opacity = 0.48 + Math.min(emissions / 180, 0.28);
+    if (window.earthGlaciers) {
+      const glacierScale = Math.max(0.42, 1 - iceLoss / 115);
+      window.earthGlaciers.forEach((glacier) => glacier.scale.set(glacierScale, glacierScale, glacierScale));
+      window.earthSea.material.opacity = 0.08 + Math.min(iceLoss / 260, 0.12);
+      const seaScale = 1 + Math.min(iceLoss / 380, 0.08);
+      window.earthSea.scale.setScalar(seaScale);
+      const landScale = 1 - Math.min(iceLoss / 520, 0.06);
+      window.earthGlobe.scale.setScalar(landScale);
+    }
   }
 }
 
@@ -121,6 +130,31 @@ function createEarth() {
   window.earthMaterial = earthMaterial;
   const globe = new THREE.Mesh(new THREE.SphereGeometry(1, 96, 96), earthMaterial);
   scene.add(globe);
+  window.earthGlobe = globe;
+
+  const glacierMaterial = new THREE.MeshPhongMaterial({
+    color: 0xe9f8ff,
+    transparent: true,
+    opacity: 0.92,
+    shininess: 80,
+  });
+  const northGlacier = new THREE.Mesh(
+    new THREE.SphereGeometry(1.009, 64, 32, 0, Math.PI * 2, 0, 0.34),
+    glacierMaterial
+  );
+  const southGlacier = new THREE.Mesh(
+    new THREE.SphereGeometry(1.009, 64, 32, 0, Math.PI * 2, Math.PI - 0.34, 0.34),
+    glacierMaterial.clone()
+  );
+  scene.add(northGlacier, southGlacier);
+  window.earthGlaciers = [northGlacier, southGlacier];
+
+  const sea = new THREE.Mesh(
+    new THREE.SphereGeometry(1.016, 64, 64),
+    new THREE.MeshPhongMaterial({ color: 0x45b9d8, transparent: true, opacity: 0.1, side: THREE.FrontSide, depthWrite: false })
+  );
+  scene.add(sea);
+  window.earthSea = sea;
 
   const clouds = new THREE.Mesh(
     new THREE.SphereGeometry(1.012, 64, 64),
@@ -182,8 +216,8 @@ function createEarth() {
 }
 
 sliders.forEach((input) => input.addEventListener("input", updateSimulation));
-updateSimulation();
 createEarth();
+updateSimulation();
 
 /*
  * TODO: 아래 순서로 팀 프로젝트를 구현하세요.
